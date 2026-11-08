@@ -6,6 +6,7 @@ import {
   getTransactionDetails,
 } from "./solana.js";
 import { parseTransaction } from "./parseTransaction.js";
+import { summarizeHandover } from "./gemini.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +93,32 @@ app.get("/api/transactions/:signature", async (req, res) => {
 
     res.status(502).json({
       error: "Could not load transaction details from Solana.",
+    });
+  }
+});
+
+app.post("/api/handover/summary", async (req, res) => {
+  const { report } = req.body || {};
+
+  if (
+    typeof report !== "string" ||
+    report.trim().length === 0 ||
+    report.length > 40000
+  ) {
+    return res.status(400).json({
+      error: "Provide a report between 1 and 40,000 characters.",
+    });
+  }
+
+  try {
+    const summary = await summarizeHandover(report);
+    res.json({ summary });
+  } catch (error) {
+    console.error("Summary generation failed:", error.message);
+
+    res.status(502).json({
+      error:
+        "AI summary unavailable. You can still download the original report.",
     });
   }
 });
