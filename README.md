@@ -13,16 +13,22 @@ handover draft with an optional Gemini-assisted summary.
 
 The first request may take around a minute while the free hosting service wakes up.
 
-## Why I built it
+## Why we built it
 
-As a student community organizer, I became interested in how financial
-context survives leadership changes. A transaction can show where funds
-moved, while the purpose, supporting documents and pending responsibilities
-still need to be recorded by people.
+The idea grew from Ibrahim's experience as a student community organizer
+and an interest in how financial context survives leadership changes.
+
+A transaction can show where funds moved, while the purpose, supporting
+documents and pending responsibilities still need to be recorded by people.
 
 This prototype explores that workflow for communities using Solana.
 Demand for the specific handover workflow has not yet been validated
 through user interviews.
+
+## Team contributions
+
+- **Ibrahim Danjuma:** application development, API integration and deployment.
+- **Usman Abdullahi:** idea development and testing.
 
 ## Features
 
@@ -66,7 +72,7 @@ generated report, including saved notes and commitments, to Google Gemini.
 
 ## Run locally
 
-Install dependencies:
+Run the installation commands from the repository root:
 
 ```bash
 npm ci --prefix server
@@ -88,14 +94,16 @@ cd server
 npm run dev
 ```
 
-In another terminal, start the frontend:
+In another terminal, starting from the repository root, run:
 
 ```bash
 cd client
 npm run dev
 ```
 
-For the production setup, build the frontend, then start Express:
+Open the frontend URL printed by Vite.
+
+For the production setup, run these commands from the repository root:
 
 ```bash
 npm run build --prefix client
@@ -116,24 +124,30 @@ Open http://localhost:3000.
 - Anyone entering an address can create their own local notes; this does
   not establish authority over that wallet.
 - Evidence links and spending explanations are not independently verified.
+- Missing-information flags describe records in the local workspace;
+  supporting information may exist elsewhere.
 - The report does not calculate complete spending totals or reconcile accounts.
 - AI output requires human review.
 - The application cannot move funds or transfer wallet control.
 
 ## Validation
 
-The developer manually checked the deployed workflow:
+Ibrahim manually checked the deployed workflow:
 
 - Wallet lookup and transaction inspection.
 - Saved notes and commitments surviving refresh.
 - Report generation and download.
 - Gemini summary generation and inclusion in the downloaded report.
 
+Usman also contributed to testing the prototype.
+
 The frontend production build passed.
 
 ## AI disclosure
 
-ChatGPT assisted with planning, architecture, code generation,
+ChatGPT/Codex assisted with planning, architecture, code generation,
 explanations and debugging. Gemini provides the application's optional
-handover summaries. I implemented and manually tested the workflow as
-part of my learning journey.
+handover summaries.
+
+Ibrahim implemented the application with AI assistance as part of his
+learning journey. Usman contributed to idea development and testing.
