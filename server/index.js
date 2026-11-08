@@ -1,6 +1,10 @@
 import "dotenv/config";
 import express from "express";
-import { getWalletBalance, getWalletTransactions } from "./solana.js";
+import {
+  getWalletBalance,
+  getWalletTransactions,
+  getTransactionDetails,
+} from "./solana.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -52,6 +56,34 @@ app.get("/api/wallet/:address/transactions", async (req, res) => {
 
     res.status(502).json({
       error: "Could not load transactions from Solana. Please try again.",
+    });
+  }
+});
+
+app.get("/api/transactions/:signature", async (req, res) => {
+  const { signature } = req.params;
+
+  if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) {
+    return res.status(400).json({
+      error: "Enter a valid transaction signature.",
+    });
+  }
+
+  try {
+    const transaction = await getTransactionDetails(signature);
+
+    if (transaction === null) {
+      return res.status(404).json({
+        error: "Transaction details are unavailable on Devnet.",
+      });
+    }
+
+    res.json(transaction);
+  } catch (error) {
+    console.error("Transaction details failed:", error.message);
+
+    res.status(502).json({
+      error: "Could not load transaction details from Solana.",
     });
   }
 });

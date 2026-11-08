@@ -76,3 +76,38 @@ export async function getWalletTransactions(address) {
     })),
   };
 }
+
+export async function getTransactionDetails(signature) {
+  const response = await fetch(RPC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getTransaction",
+      params: [
+        signature,
+        {
+          encoding: "jsonParsed",
+          commitment: "finalized",
+          maxSupportedTransactionVersion: 0,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Solana service returned ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error.message);
+  }
+
+  return data.result;
+}
