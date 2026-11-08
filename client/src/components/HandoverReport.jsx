@@ -3,10 +3,13 @@ import { useState } from "react";
 function HandoverReport({ walletAddress, balance, transactions }) {
   const [report, setReport] = useState("");
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
 
   function generateReport() {
     setError("");
     setReport("");
+    setSummary("");
 
     try {
       const prefix = `relayledger:devnet:${walletAddress}`;
@@ -21,7 +24,10 @@ function HandoverReport({ walletAddress, balance, transactions }) {
           transaction,
           purpose:
             typeof saved?.purpose === "string" ? saved.purpose.trim() : "",
-          category: saved?.category || "Uncategorised",
+          category:
+            typeof saved?.category === "string"
+              ? saved.category
+              : "Uncategorised",
           evidenceUrl:
             typeof saved?.evidenceUrl === "string"
               ? saved.evidenceUrl.trim()
@@ -37,10 +43,11 @@ function HandoverReport({ walletAddress, balance, transactions }) {
         ? savedCommitments
         : [];
 
-      const openCommitments = commitments.filter((item) => !item.resolved);
+      const openCommitments = commitments.filter(
+        (item) => item && !item.resolved,
+      );
 
       const missingPurpose = records.filter((record) => !record.purpose);
-
       const missingEvidence = records.filter((record) => !record.evidenceUrl);
 
       const lines = [
@@ -58,6 +65,7 @@ function HandoverReport({ walletAddress, balance, transactions }) {
         "Notes and commitments are user-entered and unverified.",
         "Evidence links have not been checked for authenticity or availability.",
         "Illustrative demo notes must not be treated as factual spending claims.",
+        "Missing information refers only to records saved in this browser.",
         "",
         "REVIEW SUMMARY",
         `Records without a saved explanation: ${missingPurpose.length}`,
@@ -67,13 +75,23 @@ function HandoverReport({ walletAddress, balance, transactions }) {
         "TRANSACTION RECORDS",
       ];
 
+      if (records.length === 0) {
+        lines.push("No transaction records were loaded.");
+      }
+
       records.forEach((record) => {
         const { transaction } = record;
 
         lines.push(
           "",
           `[${record.reference}] ${transaction.signature}`,
-          `Execution: ${transaction.failed ? "Failed" : "Succeeded"}`,
+          `Execution: ${
+            transaction.failed === true
+              ? "Failed"
+              : transaction.failed === false
+                ? "Succeeded"
+                : "Unknown"
+          }`,
           `Confirmation: ${transaction.confirmationStatus || "Unknown"}`,
           `Date: ${
             transaction.blockTime == null
@@ -96,7 +114,7 @@ function HandoverReport({ walletAddress, balance, transactions }) {
       openCommitments.forEach((item, index) => {
         lines.push(
           "",
-          `[C${index + 1}] ${item.description}`,
+          `[C${index + 1}] ${item.description || "No description supplied"}`,
           `Responsible: ${item.owner || "Unassigned"}`,
         );
       });
@@ -124,8 +142,61 @@ function HandoverReport({ walletAddress, balance, transactions }) {
     }
   }
 
+  async function generateSummary() {
+    if (!report.trim() || summarizing) return;
+
+    setSummarizing(true);
+    setSummary("");
+    setError("");
+
+    try {
+      const response = await fetch("/api/handover/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ report }),
+        signal: AbortSignal.timeout(100000),
+      });
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "The server returned an unexpected response. Check that the summary API is running.",
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Summary generation failed.");
+      }
+
+      if (typeof data.summary !== "string" || !data.summary.trim()) {
+        throw new Error("The AI service returned an empty summary.");
+      }
+
+      setSummary(data.summary.trim());
+    } catch (err) {
+      setError(
+        err.name === "TimeoutError"
+          ? "The summary request timed out. You can still download the source report."
+          : err.message || "Could not generate the AI summary.",
+      );
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
   function downloadReport() {
-    const blob = new Blob([report], {
+    if (!report) return;
+
+    const exportText = summary
+      ? `AI-ASSISTED DRAFT — REVIEW REQUIRED\n\n${summary}\n\nSOURCE REPORT\n\n${report}`
+      : report;
+
+    const blob = new Blob([exportText], {
       type: "text/plain;charset=utf-8",
     });
 
@@ -145,22 +216,50 @@ function HandoverReport({ walletAddress, balance, transactions }) {
   return (
     <section>
       <h2>Financial handover</h2>
+
       <p>
         Save your transaction notes and commitments first. Generate again after
         making changes.
       </p>
 
-      <button onClick={generateReport}>Generate handover draft</button>
+      <button onClick={generateReport} disabled={summarizing}>
+        Generate handover draft
+      </button>
 
       {error && <p role="alert">{error}</p>}
 
       {report && (
         <>
-          <p role="status">Draft ready. Review it before sharing.</p>
+          <p role="status">
+            {summarizing
+              ? "Writing your AI summary..."
+              : "Draft ready. Review it before sharing."}
+          </p>
 
-          <button onClick={downloadReport}>Download handover</button>
+          <button onClick={downloadReport} disabled={summarizing}>
+            Download handover
+          </button>
 
-          <pre className="report-preview">{report}</pre>
+          <p>
+            Creating an AI summary sends this report, including saved notes and
+            commitments, to Google Gemini.
+          </p>
+
+          <button onClick={generateSummary} disabled={summarizing}>
+            {summarizing ? "Writing summary..." : "Create AI summary"}
+          </button>
+
+          {summary && (
+            <div>
+              <h3>AI-assisted draft — review required</h3>
+              <pre className="report-preview">{summary}</pre>
+            </div>
+          )}
+
+          <details className="source-report">
+            <summary>View source report and transaction references</summary>
+            <pre className="report-preview">{report}</pre>
+          </details>
         </>
       )}
     </section>

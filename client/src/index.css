@@ -193,3 +193,21 @@ li li {
   border-radius: 10px;
   background: #080f1c;
 }
+
+.report-preview {
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.8;
+  text-align: left;
+}
+
+.source-report {
+  margin-top: 24px;
+}
+
+.source-report > summary {
+  cursor: pointer;
+  color: #7dd3fc;
+  font-weight: 600;
+  padding: 12px 0;
+}

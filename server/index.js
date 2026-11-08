@@ -7,6 +7,8 @@ import {
 } from "./solana.js";
 import { parseTransaction } from "./parseTransaction.js";
 import { summarizeHandover } from "./gemini.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -121,6 +123,20 @@ app.post("/api/handover/summary", async (req, res) => {
         "AI summary unavailable. You can still download the original report.",
     });
   }
+});
+
+// Unknown API routes return JSON rather than an HTML page.
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "API route not found." });
+});
+
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(currentDirectory, "../client/dist");
+
+app.use(express.static(clientDist));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(clientDist, "index.html"));
 });
 
 app.listen(PORT, () => {
