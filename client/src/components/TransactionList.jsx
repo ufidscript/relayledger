@@ -1,4 +1,6 @@
-function TransactionList({ transactions }) {
+import TransactionItem from "./TransactionItem";
+
+function TransactionList({ transactions, walletAddress }) {
   if (transactions.length === 0) {
     return <p>No recent transactions found.</p>;
   }
@@ -10,27 +12,11 @@ function TransactionList({ transactions }) {
 
       <ul>
         {transactions.map((transaction) => (
-          <li key={transaction.signature}>
-            <p>
-              <strong>{transaction.failed ? "Failed" : "Succeeded"}</strong>
-              {" · "}
-              {transaction.confirmationStatus}
-            </p>
-
-            <p>
-              {transaction.blockTime == null
-                ? "Date unavailable"
-                : new Date(transaction.blockTime * 1000).toLocaleString()}
-            </p>
-
-            <a
-              href={`https://explorer.solana.com/tx/${transaction.signature}?cluster=devnet`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View transaction on Solana Explorer
-            </a>
-          </li>
+          <TransactionItem
+            key={transaction.signature}
+            transaction={transaction}
+            walletAddress={walletAddress}
+          />
         ))}
       </ul>
     </section>

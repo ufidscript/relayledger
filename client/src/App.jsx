@@ -1,5 +1,7 @@
 import { useState } from "react";
 import TransactionList from "./components/TransactionList";
+import Commitments from "./components/Commitments";
+import HandoverReport from "./components/HandoverReport";
 
 function App() {
   const [address, setAddress] = useState("");
@@ -58,7 +60,6 @@ function App() {
       <h1>RelayLedger</h1>
       <p>Clear treasury records. Better handovers.</p>
       <p>Network: Solana Devnet — test funds</p>
-
       <form onSubmit={loadBalance}>
         <label htmlFor="wallet-address">Solana wallet address</label>
 
@@ -76,9 +77,7 @@ function App() {
           {loading ? "Loading..." : "Load wallet"}
         </button>
       </form>
-
       {error && <p role="alert">{error}</p>}
-
       {balance && (
         <section aria-label="Wallet balance">
           <h2>Wallet balance</h2>
@@ -89,8 +88,26 @@ function App() {
           <p>This is the native SOL balance, excluding other tokens.</p>
         </section>
       )}
+      {balance && transactions !== null && (
+        <TransactionList
+          key={balance.address}
+          transactions={transactions}
+          walletAddress={balance.address}
+        />
+      )}
 
-      {transactions !== null && <TransactionList transactions={transactions} />}
+      {balance && (
+        <Commitments key={balance.address} walletAddress={balance.address} />
+      )}
+
+      {balance && transactions !== null && (
+        <HandoverReport
+          key={balance.address}
+          walletAddress={balance.address}
+          balance={balance}
+          transactions={transactions}
+        />
+      )}
     </main>
   );
 }

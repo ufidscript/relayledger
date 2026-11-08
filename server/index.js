@@ -5,6 +5,8 @@ import {
   getWalletTransactions,
   getTransactionDetails,
 } from "./solana.js";
+import { parseTransaction } from "./parseTransaction.js";
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -78,7 +80,13 @@ app.get("/api/transactions/:signature", async (req, res) => {
       });
     }
 
-    res.json(transaction);
+    res.json({
+      signature,
+      network: "devnet",
+      blockTime: transaction.blockTime,
+      ...parseTransaction(transaction),
+      coverage: "Top-level native SOL transfers only",
+    });
   } catch (error) {
     console.error("Transaction details failed:", error.message);
 
