@@ -1,26 +1,53 @@
 import { useState } from "react";
+import TransactionList from "./components/TransactionList";
 
 function App() {
-  const [message, setMessage] = useState("");
+  const [address, setAddress] = useState("");
+  const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [transactions, setTransactions] = useState(null);
 
-  async function checkBackend() {
-    setLoading(true);
+  async function loadBalance(event) {
+    event.preventDefault();
+
+    const trimmedAddress = address.trim();
+
     setError("");
-    setMessage("");
+    setBalance(null);
+    setTransactions(null);
+
+    if (!trimmedAddress) {
+      setError("Enter a Solana address.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const response = await fetch("/api/health");
+      const walletPath = `/api/wallet/${encodeURIComponent(trimmedAddress)}`;
 
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
+      const balanceResponse = await fetch(`${walletPath}/balance`);
+      const balanceData = await balanceResponse.json();
+
+      if (!balanceResponse.ok) {
+        throw new Error(balanceData.error || "Could not load the balance.");
       }
 
-      const data = await response.json();
-      setMessage(data.message);
+      setBalance(balanceData);
+
+      const transactionsResponse = await fetch(`${walletPath}/transactions`);
+      const transactionsData = await transactionsResponse.json();
+
+      if (!transactionsResponse.ok) {
+        throw new Error(
+          transactionsData.error || "Could not load transactions.",
+        );
+      }
+
+      setTransactions(transactionsData.transactions);
     } catch (err) {
-      setError(`Could not reach the backend: ${err.message}`);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -30,13 +57,40 @@ function App() {
     <main>
       <h1>RelayLedger</h1>
       <p>Clear treasury records. Better handovers.</p>
+      <p>Network: Solana Devnet — test funds</p>
 
-      <button onClick={checkBackend} disabled={loading}>
-        {loading ? "Checking..." : "Check backend connection"}
-      </button>
+      <form onSubmit={loadBalance}>
+        <label htmlFor="wallet-address">Solana wallet address</label>
 
-      {message && <p role="status">{message}</p>}
+        <input
+          id="wallet-address"
+          type="text"
+          value={address}
+          onChange={(event) => setAddress(event.target.value)}
+          placeholder="Paste a public Solana address"
+          disabled={loading}
+          required
+        />
+
+        <button type="submit" disabled={loading}>
+          {loading ? "Loading..." : "Load wallet"}
+        </button>
+      </form>
+
       {error && <p role="alert">{error}</p>}
+
+      {balance && (
+        <section aria-label="Wallet balance">
+          <h2>Wallet balance</h2>
+          <p style={{ overflowWrap: "anywhere" }}>{balance.address}</p>
+          <p>
+            <strong>{balance.sol} SOL</strong>
+          </p>
+          <p>This is the native SOL balance, excluding other tokens.</p>
+        </section>
+      )}
+
+      {transactions !== null && <TransactionList transactions={transactions} />}
     </main>
   );
 }
